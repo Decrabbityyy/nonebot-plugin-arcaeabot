@@ -3,7 +3,7 @@ from ....schema import UserBest, UserInfo
 from PIL import Image, ImageFilter
 from ..utils import *
 from ....resource_manager import StaticPath
-
+from ....tool import calculate_rating
 
 def draw_single_song(data: Union[UserBest, UserInfo], language: str):
     # User Info
@@ -19,11 +19,25 @@ def draw_single_song(data: Union[UserBest, UserInfo], language: str):
         else f"{character}_icon.png"
     )
     rating = account_info.rating
+
+    
+
     # Score Info
     if isinstance(data, UserInfo):
         score_info = data.content.recent_score[0]
+        shiny_perfect_count = 0
+        perfect_count = -1
+        near_count = -1
+        miss_count = -1
+        _clear_type = 1
     else:
         score_info = data.content.record
+        shiny_perfect_count = score_info.shiny_perfect_count
+        perfect_count = score_info.perfect_count
+        near_count = score_info.near_count
+        song_rating = score_info.rating
+        miss_count = score_info.miss_count
+        _clear_type = score_info.clear_type
     song_id = score_info.song_id
     song_info = data.content.song_info[0]
     # 判断用户的自定义语言
@@ -36,11 +50,10 @@ def draw_single_song(data: Union[UserBest, UserInfo], language: str):
         song_name = song_info.name_en
     difficulty = score_info.difficulty
     score = score_info.score
-    shiny_perfect_count = score_info.shiny_perfect_count
-    perfect_count = score_info.perfect_count
-    near_count = score_info.near_count
-    miss_count = score_info.miss_count
-    song_rating = score_info.rating
+
+    if isinstance(data, UserInfo):
+        song_rating = calculate_rating(song_info.rating/10,score)
+
     constant = song_info.rating / 10
     # Back Ground
     cover_name = f"{difficulty}.jpg" if song_info.jacket_override else "base.jpg"
@@ -107,7 +120,7 @@ def draw_single_song(data: Union[UserBest, UserInfo], language: str):
         difficulty
     ]
     image = draw_text(image, write_difficulty, diff_color)
-    clear_type = ("TL", "NC", "FR", "PM", "EC", "HC")[score_info.clear_type]
+    clear_type = ("TL", "NC", "FR", "PM", "EC", "HC")[_clear_type]
     track_type = get_track_type(clear_type)
     track_info = open_img(StaticPath.is_failed(track_type))
     origin_size_w, origin_size_h = track_info.size

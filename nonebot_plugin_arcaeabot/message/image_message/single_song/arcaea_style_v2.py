@@ -4,6 +4,7 @@ from PIL import Image, ImageFilter
 from ..utils import *
 from ....resource_manager import StaticPath
 from ....get_char_point import GetCharPoint
+from ....tool import calculate_rating
 
 
 def draw_single_song(data: Union[UserBest, UserInfo], language: str):
@@ -20,16 +21,31 @@ def draw_single_song(data: Union[UserBest, UserInfo], language: str):
     icon: str = f"{character}_icon.png"
     character_image: str = f"{character}.png"
     rating = account_info.rating
+
+    
+
     # Score Info
     if isinstance(data, UserInfo):
         score_info = data.content.recent_score[0]
+        health = 100
+        perfect_count = -1
+        shiny_perfect_count = 0
+        near_count = -1
+        miss_count = -1
+        _clear_type = 1
     else:
         score_info = data.content.record
+        health = score_info.health
+        song_rating = score_info.rating
+        perfect_count = score_info.perfect_count
+        shiny_perfect_count = score_info.shiny_perfect_count
+        near_count = score_info.near_count
+        miss_count = score_info.miss_count
+        _clear_type = score_info.clear_type
+        
+
     song_id = score_info.song_id
     song_info = data.content.song_info[0]
-    health = score_info.health
-    song_rating = score_info.rating
-    shiny_perfect_count = score_info.shiny_perfect_count
     note = song_info.note
     # 判断用户的自定义语言
     if language == "en" or not language:
@@ -41,9 +57,11 @@ def draw_single_song(data: Union[UserBest, UserInfo], language: str):
         song_name = song_info.name_en
     difficulty = score_info.difficulty
     score = score_info.score
-    perfect_count = score_info.perfect_count
-    near_count = score_info.near_count
-    miss_count = score_info.miss_count
+
+    
+    if isinstance(data, UserInfo):
+        song_rating = calculate_rating(song_info.rating/10,score)
+
     # Back Ground
     cover_name = f"{difficulty}.jpg" if song_info.jacket_override else "base.jpg"
     image = Image.new("RGBA", (2388, 1668), (0, 0, 0, 0))
@@ -82,7 +100,7 @@ def draw_single_song(data: Union[UserBest, UserInfo], language: str):
     origin_size_w, origin_size_h = retry_bottom.size
     retry_bottom = retry_bottom.resize((405, int(405 / origin_size_w * origin_size_h)))
     image.alpha_composite(retry_bottom, (1983, 1549))
-    clear_type = ("TL", "NC", "FR", "PM", "EC", "HC")[score_info.clear_type]
+    clear_type = ("TL", "NC", "FR", "PM", "EC", "HC")[_clear_type]
     move_y = 0
     hp_top = open_img(StaticPath.arcaea_style_dir / "hp_top.png")
     origin_size_w, origin_size_h = hp_top.size
